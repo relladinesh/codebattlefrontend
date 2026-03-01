@@ -11,10 +11,9 @@ export default function Login() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ✅ refs to avoid StrictMode double initialization
-  const gsiLoadedRef = useRef(false);
+  // ✅ prevent multiple initialization (StrictMode safe)
   const gsiInitedRef = useRef(false);
-  const hiddenGoogleBtnRef = useRef(null);
+  const googleBtnRef = useRef(null);
 
   const onChange = (e) =>
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -26,13 +25,12 @@ export default function Login() {
     try {
       const res = await loginApi(form);
 
-      // backend returns { token, user } (no ok)
       if (!res?.token) {
         setErr(res?.message || "Login failed");
         return;
       }
 
-      saveAuth(res); // your store should put token in localStorage
+      saveAuth(res);
       nav("/dashboard");
     } catch (e2) {
       setErr(e2?.message || "Login error");
@@ -41,15 +39,16 @@ export default function Login() {
     }
   }
 
-  // ✅ Load Google Identity script in THIS PAGE ONLY
+  // ✅ Load Google Identity script only once
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
     if (!clientId) {
-      setErr("Missing VITE_GOOGLE_CLIENT_ID in .env");
+      setErr("Missing VITE_GOOGLE_CLIENT_ID in .env / Vercel env");
       return;
     }
 
-    // already available
+    // if already loaded
     if (window.google?.accounts?.id) {
       initGsi(clientId);
       return;
@@ -65,11 +64,7 @@ export default function Login() {
     script.defer = true;
     script.dataset.gsi = "true";
 
-    script.onload = () => {
-      gsiLoadedRef.current = true;
-      initGsi(clientId);
-    };
-
+    script.onload = () => initGsi(clientId);
     script.onerror = () => setErr("Failed to load Google login script");
 
     document.body.appendChild(script);
@@ -83,6 +78,7 @@ export default function Login() {
 
     window.google.accounts.id.initialize({
       client_id: clientId,
+      ux_mode: "popup", // ✅ best for Vercel + SPA
       callback: async (response) => {
         try {
           setErr("");
@@ -94,7 +90,7 @@ export default function Login() {
             return;
           }
 
-          // ✅ call your backend
+          // ✅ send idToken to backend gateway
           const res = await googleCallbackApi(idToken);
 
           if (!res?.token) {
@@ -112,10 +108,9 @@ export default function Login() {
       },
     });
 
-    // ✅ Render a REAL Google button (but we keep it hidden)
-    // We'll trigger it using our custom button.
-    if (hiddenGoogleBtnRef.current) {
-      window.google.accounts.id.renderButton(hiddenGoogleBtnRef.current, {
+    // ✅ Render official Google button directly (NO hidden click hack)
+    if (googleBtnRef.current) {
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
         theme: "outline",
         size: "large",
         shape: "rectangular",
@@ -123,25 +118,6 @@ export default function Login() {
         width: 320,
       });
     }
-  }
-
-  // ✅ Custom button click triggers the hidden real Google button
-  function onGoogleClick() {
-    setErr("");
-
-    // if not ready yet
-    if (!window.google?.accounts?.id) {
-      setErr("Google login is not ready yet. Refresh once.");
-      return;
-    }
-
-    const realBtn = hiddenGoogleBtnRef.current?.querySelector("div[role=button]");
-    if (!realBtn) {
-      setErr("Google button not mounted. Refresh once.");
-      return;
-    }
-
-    realBtn.click();
   }
 
   return (
@@ -185,24 +161,9 @@ export default function Login() {
 
         <div className="my-6 text-center text-slate-400 text-sm">OR</div>
 
-        {/* ✅ YOUR CUSTOM GOOGLE BUTTON (you can redesign later) */}
-        <button
-          type="button"
-          onClick={onGoogleClick}
-          disabled={loading}
-          className="w-full p-3 rounded-xl bg-white text-black font-semibold hover:bg-gray-200 disabled:opacity-60 flex items-center justify-center gap-3"
-        >
-          <img
-            src="https://developers.google.com/identity/images/g-logo.png"
-            alt="google"
-            className="w-5 h-5"
-          />
-          Login with Google
-        </button>
-
-        {/* ✅ Hidden real Google button (required for token + popup flow) */}
-        <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
-          <div ref={hiddenGoogleBtnRef} />
+        {/* ✅ REAL GOOGLE BUTTON */}
+        <div className="w-full flex justify-center">
+          <div ref={googleBtnRef} />
         </div>
 
         <p className="mt-5 text-sm text-slate-300 text-center">
