@@ -1,4 +1,3 @@
-// src/pages/Lobby.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../store/auth";
@@ -41,14 +40,12 @@ export default function Lobby() {
       setLobbyClosesAtMs(Number(lobbyClosesAtMs || 0));
     });
 
-    // ✅ auto redirect when battle starts
     socket.on("battle:started", (startedRoom) => {
       nav(`/battle/${startedRoom.roomId}`);
     });
 
     socket.on("room:cancelled", () => nav("/dashboard"));
 
-    // initial load
     socket.emit("room:get", { roomId }, (ack) => {
       if (!ack?.ok) setErr(ack?.message || "Room not found");
       else setRoom(ack.room);
@@ -60,7 +57,6 @@ export default function Lobby() {
     };
   }, [socket, roomId, nav]);
 
-  // timer tick (lobby countdown)
   useEffect(() => {
     if (!lobbyClosesAtMs) {
       setTimeLeftMs(0);
@@ -85,26 +81,29 @@ export default function Lobby() {
   };
 
   return (
-    <div className="bg-slate-950 text-white min-h-[calc(100vh-64px)]">
-      {/* TOP BAR (dashboard style) */}
+    <div className="bg-slate-950 text-white min-h-[100svh]">
       <div className="border-b border-slate-800 bg-slate-950">
-        <div className="max-w-5xl mx-auto px-5 py-5 flex items-start justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-4 sm:px-5 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
           <div className="min-w-0">
             <button
               onClick={() => nav("/dashboard")}
-              className="text-xl font-extrabold tracking-tight text-slate-100 hover:text-white"
+              className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-100 hover:text-white"
             >
               CodeBattle
             </button>
-            
-            {err && <div className="text-sm text-rose-300 mt-2">{err}</div>}
-          </div>
-       
 
-          <div className="flex items-center gap-3">
+            {err && <div className="text-sm text-rose-300 mt-2 break-words">{err}</div>}
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-800 text-sm">
               <div className="text-slate-400 text-xs">Lobby ends in</div>
-              <div className="font-bold">{lobbyClosesAtMs ? formatMMSS(timeLeftMs) : "--:--"}</div>
+              <div className="font-bold">
+                {lobbyClosesAtMs ? formatMMSS(timeLeftMs) : "--:--"}
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1">
+                Socket: <span className="text-slate-300">{status}</span>
+              </div>
             </div>
 
             <button
@@ -117,53 +116,45 @@ export default function Lobby() {
         </div>
       </div>
 
-      {/* CONTENT */}
-      <div className="max-w-5xl mx-auto px-5 py-6 space-y-4">
-        {/* Actions */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 text-center">
-  
-  <div className="text-sm text-slate-400 mb-3">
-    Share this Room Code
-  </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-5 py-5 sm:py-6 space-y-4">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-8 text-center">
+          <div className="text-sm text-slate-400 mb-3">Share this Room Code</div>
 
-  <div className="flex justify-center items-center gap-4">
-    
-    <div className="px-8 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
-      <span className="text-4xl md:text-5xl font-extrabold tracking-widest text-emerald-300">
-        {roomId}
-      </span>
-    </div>
+          <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4">
+            <div className="px-4 sm:px-8 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 overflow-hidden">
+              <span className="block text-3xl sm:text-5xl font-extrabold tracking-widest text-emerald-300 break-all">
+                {roomId}
+              </span>
+            </div>
 
-    <button
-      onClick={() => navigator.clipboard?.writeText?.(roomId)}
-      className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
-    >
-      Copy
-    </button>
+            <button
+              onClick={() => navigator.clipboard?.writeText?.(roomId)}
+              className="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
 
-  </div>
-
-</div>
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
           <div className="min-w-0">
-            
-            <div className="text-lg font-bold">Ready Up</div>
+            <div className="text-base sm:text-lg font-bold">Ready Up</div>
             <div className="text-sm text-slate-400">
               Battle starts automatically when the room is full and everyone is ready.
             </div>
           </div>
 
-          <div className="flex gap-2 flex-wrap">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
             <button
               onClick={readyMe}
-              className="px-4 py-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 font-semibold"
+              className="w-full px-4 py-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 font-semibold"
             >
               Ready
             </button>
 
             <button
               onClick={notReady}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
+              className="w-full px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
             >
               Not Ready
             </button>
@@ -171,20 +162,18 @@ export default function Lobby() {
             <button
               onClick={showInfo}
               disabled={!isFull}
-              className="px-4 py-2 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold disabled:opacity-60"
+              className="w-full px-4 py-2 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold disabled:opacity-60"
             >
               Info
             </button>
           </div>
         </div>
 
-        {/* 2 Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Players */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
-            <div className="flex items-center justify-between">
-              <div className="text-lg font-bold">Players</div>
-              <div className="text-sm text-slate-400">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-base sm:text-lg font-bold">Players</div>
+              <div className="text-sm text-slate-400 shrink-0">
                 {room?.players?.length || 0}/{room?.maxPlayers || 0}
               </div>
             </div>
@@ -200,17 +189,18 @@ export default function Lobby() {
                   return (
                     <div
                       key={p.userId}
-                      className="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-xl px-3 py-2"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2"
                     >
                       <div className="min-w-0">
                         <div className="text-sm truncate text-slate-200">
-                          {p.email} {isYou ? <span className="text-slate-400">(you)</span> : ""}
+                          {p.email}{" "}
+                          {isYou ? <span className="text-slate-400">(you)</span> : ""}
                         </div>
                         <div className="text-xs text-slate-500 truncate">{p.userId}</div>
                       </div>
 
                       <div
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                        className={`self-start sm:self-auto text-xs font-semibold px-2.5 py-1 rounded-full border ${
                           isReady
                             ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
                             : "bg-slate-500/10 text-slate-300 border-slate-600/30"
@@ -225,15 +215,14 @@ export default function Lobby() {
             )}
           </div>
 
-          {/* Room Settings */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
-            <div className="text-lg font-bold">Room Settings</div>
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5">
+            <div className="text-base sm:text-lg font-bold">Room Settings</div>
 
             {!room ? (
               <div className="text-slate-400 text-sm mt-3">Loading...</div>
             ) : (
               <div className="mt-3 grid grid-cols-1 gap-3 text-sm">
-                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 break-words">
                   Topic: <span className="text-slate-100 font-semibold">{room.topic}</span>
                 </div>
 
@@ -257,8 +246,7 @@ export default function Lobby() {
           </div>
         </div>
 
-        {/* Hint */}
-        <div className="text-xs text-slate-500">
+        <div className="text-xs text-slate-500 px-1">
           Tip: Share the room code with your friend so they can join from the dashboard.
         </div>
       </div>

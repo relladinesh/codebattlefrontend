@@ -1,14 +1,9 @@
-// ======================= PART 1 / 3 =======================
-// src/pages/BattleEditor.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../store/auth";
 import { makeSocket } from "../lib/socket";
 import Editor from "@monaco-editor/react";
 
-/* ==============================
-   LANGUAGES
-============================== */
 const LANGS = [
   { label: "Java", value: 62 },
   { label: "Python", value: 71 },
@@ -20,9 +15,6 @@ function starterFieldForLang(language_id) {
   return null;
 }
 
-/* ==============================
-   MARKERS
-============================== */
 const HELPERS_START = "__HELPERS_START__";
 const HELPERS_END = "__HELPERS_END__";
 const START_MARK = "__START__";
@@ -32,9 +24,6 @@ function token(langId, name) {
   return langId === 62 ? `//${name}` : `#${name}`;
 }
 
-/* ==============================
-   THEME (optional)
-============================== */
 const BATTLE_PRO_THEME = {
   base: "vs-dark",
   inherit: true,
@@ -70,11 +59,6 @@ const BATTLE_PRO_THEME = {
   },
 };
 
-/* ==============================
-   INSERT MARKERS (Java + Python)
-   - helpers region inside class
-   - main region inside required function
-============================== */
 function ensureMarkers(code, language_id, fnName = "") {
   if (!code) return "";
 
@@ -83,18 +67,13 @@ function ensureMarkers(code, language_id, fnName = "") {
   const ms = token(language_id, START_MARK);
   const me = token(language_id, END_MARK);
 
-  // If both regions already exist, keep as-is
   const hasHelpers = code.includes(hs) && code.includes(he);
   const hasMain = code.includes(ms) && code.includes(me);
   if (hasHelpers && hasMain) return code;
 
   let out = String(code);
 
-  // ---------------------------------------
-  // JAVA: put helpers inside class, main inside method body
-  // ---------------------------------------
   if (language_id === 62) {
-    // 1) Helpers region: after "class Solution {"
     if (!hasHelpers) {
       const classIdx = out.search(/\bclass\s+Solution\b/);
       if (classIdx !== -1) {
@@ -109,10 +88,8 @@ function ensureMarkers(code, language_id, fnName = "") {
       }
     }
 
-    // 2) Main region: inside function body of fnName
     if (!hasMain) {
       const name = fnName?.trim() || "";
-      // match method like: public int[] twoSum(...){
       const re = name
         ? new RegExp(`\\b${name}\\s*\\([^)]*\\)\\s*\\{`, "m")
         : /\bpublic\b[\s\S]*?\([^)]*\)\s*\{/m;
@@ -121,69 +98,43 @@ function ensureMarkers(code, language_id, fnName = "") {
       if (m && typeof m.index === "number") {
         const openBraceAt = out.indexOf("{", m.index);
         const insertAt = openBraceAt + 1;
-        out =
-          out.slice(0, insertAt) +
-          `\n\n    ${ms}\n\n    ${me}\n` +
-          out.slice(insertAt);
+        out = out.slice(0, insertAt) + `\n\n    ${ms}\n\n    ${me}\n` + out.slice(insertAt);
       }
     }
 
-    // remove "TODO: write logic only" if present
     out = out.replace(/^\s*\/\/\s*TODO:.*$/gm, "");
-
     return out;
   }
 
-  // ---------------------------------------
-  // PYTHON: helpers inside class (top), main inside fn body
-  // ---------------------------------------
   if (language_id === 71) {
-    // normalize indentation (your starters are 2 spaces; we keep 2)
-    // 1) Helpers region: right after "class Solution:"
     if (!hasHelpers) {
       const classIdx = out.search(/\bclass\s+Solution\s*:/);
       if (classIdx !== -1) {
         const lineEnd = out.indexOf("\n", classIdx);
         const insertAt = lineEnd === -1 ? out.length : lineEnd + 1;
-        out =
-          out.slice(0, insertAt) +
-          `  ${hs}\n  # helper functions here\n  ${he}\n\n` +
-          out.slice(insertAt);
+        out = out.slice(0, insertAt) + `  ${hs}\n  # helper functions here\n  ${he}\n\n` + out.slice(insertAt);
       }
     }
 
-    // 2) Main region: inside def fnName(...)
     if (!hasMain) {
       const name = fnName?.trim() || "";
-      const re = name
-        ? new RegExp(`\\bdef\\s+${name}\\s*\\(`, "m")
-        : /\bdef\s+\w+\s*\(/m;
+      const re = name ? new RegExp(`\\bdef\\s+${name}\\s*\\(`, "m") : /\bdef\s+\w+\s*\(/m;
 
       const m = out.match(re);
       if (m && typeof m.index === "number") {
         const defLineEnd = out.indexOf("\n", m.index);
         const insertAt = defLineEnd === -1 ? out.length : defLineEnd + 1;
-
-        // Insert with 4-space body indent (your file uses 2 for def line, 4 for body)
-        out =
-          out.slice(0, insertAt) +
-          `    ${ms}\n\n    ${me}\n` +
-          out.slice(insertAt);
+        out = out.slice(0, insertAt) + `    ${ms}\n\n    ${me}\n` + out.slice(insertAt);
       }
     }
 
-    // remove TODO line if present
     out = out.replace(/^\s*#\s*TODO:.*$/gm, "");
-
     return out;
   }
 
   return out;
 }
 
-/* ==============================
-   EDITABLE RANGES (TWO ZONES)
-============================== */
 function getEditableRanges(code, language_id) {
   if (!code) return [];
 
@@ -197,22 +148,15 @@ function getEditableRanges(code, language_id) {
   const hsIdx = code.indexOf(hs);
   const heIdx = code.indexOf(he);
   if (hsIdx !== -1 && heIdx !== -1 && heIdx > hsIdx) {
-    ranges.push({
-      start: hsIdx + hs.length,
-      end: heIdx,
-    });
+    ranges.push({ start: hsIdx + hs.length, end: heIdx });
   }
 
   const msIdx = code.indexOf(ms);
   const meIdx = code.indexOf(me);
   if (msIdx !== -1 && meIdx !== -1 && meIdx > msIdx) {
-    ranges.push({
-      start: msIdx + ms.length,
-      end: meIdx,
-    });
+    ranges.push({ start: msIdx + ms.length, end: meIdx });
   }
 
-  // sort, just in case
   ranges.sort((a, b) => a.start - b.start);
   return ranges;
 }
@@ -230,7 +174,6 @@ function formatMMSS(ms) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// ======================= PART 2 / 3 =======================
 export default function BattleEditor() {
   const { roomId } = useParams();
   const nav = useNavigate();
@@ -260,9 +203,6 @@ export default function BattleEditor() {
   const lastGoodRef = useRef("");
   const suppressRef = useRef(false);
 
-  /* ==============================
-     SOCKET
-  ============================== */
   useEffect(() => {
     if (!socket) return;
 
@@ -300,9 +240,6 @@ export default function BattleEditor() {
     };
   }, [socket, roomId]);
 
-  /* ==============================
-     TIMER
-  ============================== */
   useEffect(() => {
     if (!room?.endTimeMs || room?.status !== "ACTIVE") {
       setTimeLeftMs(0);
@@ -320,16 +257,10 @@ export default function BattleEditor() {
     return () => clearInterval(id);
   }, [room?.endTimeMs, room?.status]);
 
-  /* ==============================
-     ACTIVE PROBLEM
-  ============================== */
   const questions = room?.questions || [];
   const activeQ = questions?.[activeIdx] || null;
   const activeProblemId = activeQ?.id || activeQ?.problemId || null;
 
-  /* ==============================
-     LOAD PROBLEM + STARTER
-  ============================== */
   useEffect(() => {
     if (!socket || !activeProblemId) return;
 
@@ -385,13 +316,9 @@ export default function BattleEditor() {
     });
   }, [socket, activeProblemId, language_id]);
 
-  /* ==============================
-     MONACO GUARDS (2 editable zones)
-  ============================== */
   function attachMonacoGuards(editor) {
     if (!editor) return;
 
-    // Disable copy/paste/cut/select-all
     editor.onKeyDown((e) => {
       const ctrl = e.ctrlKey || e.metaKey;
       const key = e.code;
@@ -421,7 +348,6 @@ export default function BattleEditor() {
       const current = model.getValue();
       const ranges = getEditableRanges(current, language_id);
 
-      // If markers missing → allow (but better to fix DB / ensureMarkers)
       if (!ranges.length) {
         lastGoodRef.current = current;
         setSourceCode(current);
@@ -444,9 +370,6 @@ export default function BattleEditor() {
     });
   }
 
-  /* ==============================
-     SUBMIT
-  ============================== */
   const submit = () => {
     setErr("");
     setSubmitResult(null);
@@ -470,18 +393,12 @@ export default function BattleEditor() {
     });
   };
 
-  /* ==============================
-     RESULT HELPERS
-  ============================== */
   const resultsArr = Array.isArray(submitResult?.results) ? submitResult.results : [];
   const total = resultsArr.length;
   const passedCount = resultsArr.filter((r) => r.passed).length;
   const maxTime = resultsArr.reduce((m, r) => Math.max(m, Number(r.time || 0)), 0);
   const maxMem = resultsArr.reduce((m, r) => Math.max(m, Number(r.memory || 0)), 0);
 
-  /* ==============================
-     LEADERBOARD
-  ============================== */
   const players = Array.isArray(room?.players) ? room.players : [];
   const scores = room?.scores || {};
 
@@ -494,16 +411,16 @@ export default function BattleEditor() {
 
   if (showLeaderboard || room?.status === "FINISHED") {
     return (
-      <div className="min-h-screen bg-slate-950 text-white p-6">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-            <div className="text-3xl font-bold">🏆 Contest Finished</div>
-            <div className="text-sm text-slate-400 mt-1">Room: {roomId}</div>
+      <div className="min-h-[100svh] bg-slate-950 text-white p-4 sm:p-6">
+        <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+            <div className="text-2xl sm:text-3xl font-bold">🏆 Contest Finished</div>
+            <div className="text-sm text-slate-400 mt-1 break-all">Room: {roomId}</div>
           </div>
 
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
             <div className="text-sm text-slate-400">Winner</div>
-            <div className="text-2xl font-bold mt-1">
+            <div className="text-xl sm:text-2xl font-bold mt-1 break-words">
               {winner ? (winner.email || winner.userId) : "N/A"}
             </div>
             <div className="text-sm mt-2 text-slate-300">
@@ -511,7 +428,7 @@ export default function BattleEditor() {
             </div>
           </div>
 
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
             <div className="text-lg font-semibold mb-4">Leaderboard</div>
 
             <div className="space-y-3">
@@ -519,18 +436,18 @@ export default function BattleEditor() {
                 sortedPlayers.map((p, idx) => (
                   <div
                     key={p.userId}
-                    className="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-xl p-4"
+                    className="flex items-center justify-between gap-3 bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 text-center font-bold text-lg">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div className="w-9 sm:w-10 text-center font-bold text-base sm:text-lg shrink-0">
                         {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx + 1}`}
                       </div>
-                      <div>
-                        <div className="font-semibold">{p.email || p.userId}</div>
-                        <div className="text-xs text-slate-500 truncate max-w-[240px]">{p.userId}</div>
+                      <div className="min-w-0">
+                        <div className="font-semibold truncate">{p.email || p.userId}</div>
+                        <div className="text-xs text-slate-500 truncate">{p.userId}</div>
                       </div>
                     </div>
-                    <div className="text-xl font-bold">{p.score}</div>
+                    <div className="text-lg sm:text-xl font-bold shrink-0">{p.score}</div>
                   </div>
                 ))
               ) : (
@@ -540,7 +457,7 @@ export default function BattleEditor() {
 
             <button
               onClick={() => nav("/dashboard")}
-              className="mt-6 w-full p-3 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold"
+              className="mt-6 w-full h-11 sm:h-12 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold"
             >
               Back to Dashboard
             </button>
@@ -549,14 +466,12 @@ export default function BattleEditor() {
       </div>
     );
   }
-  // ======================= PART 3 / 3 =======================
-  return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="max-w-7xl mx-auto p-4 space-y-4">
 
-        {/* ================= PROBLEM TABS + TIMER ================= */}
-        <div className="bg-slate-900/60 rounded-2xl p-3 border border-slate-800 flex items-center justify-between gap-3 overflow-x-auto">
-          <div className="flex gap-2 overflow-x-auto">
+  return (
+    <div className="min-h-[100svh] bg-slate-950 text-white">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-4">
+        <div className="bg-slate-900/60 rounded-xl sm:rounded-2xl p-3 border border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex gap-2 overflow-x-auto pb-1 -mb-1">
             {questions.map((p, idx) => (
               <button
                 key={p.id || p.problemId || idx}
@@ -572,7 +487,7 @@ export default function BattleEditor() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="px-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-center">
               <div className="text-[11px] text-slate-400">Time Left</div>
               <div className="text-lg font-bold">
@@ -590,30 +505,29 @@ export default function BattleEditor() {
         </div>
 
         {err && (
-          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-200 rounded-2xl p-4">
+          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-200 rounded-xl sm:rounded-2xl p-4 text-sm">
             {err}
           </div>
         )}
 
-        {/* ================= MAIN GRID ================= */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* ================= LEFT PANEL ================= */}
-          <div className="bg-slate-900/60 rounded-2xl p-5 border border-slate-800 space-y-4">
-            <div>
-              <div className="text-xl font-bold">{problem?.title || "Loading problem..."}</div>
+          <div className="bg-slate-900/60 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-slate-800 space-y-4">
+            <div className="min-w-0">
+              <div className="text-lg sm:text-xl font-bold break-words">
+                {problem?.title || "Loading problem..."}
+              </div>
               <div className="text-sm text-slate-400">
                 {problem?.topic ? `Topic: ${problem.topic}` : ""}{" "}
                 {problem?.difficulty ? `· Difficulty: ${problem.difficulty}` : ""}
               </div>
               {!!problem?.fnName && (
-                <div className="text-xs text-slate-500 mt-1">
+                <div className="text-xs text-slate-500 mt-1 break-all">
                   Function: <span className="text-slate-300 font-semibold">{problem.fnName}</span>
                 </div>
               )}
             </div>
 
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm whitespace-pre-wrap min-h-[180px]">
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm whitespace-pre-wrap min-h-[160px] sm:min-h-[180px]">
               {problem?.statement || "Loading statement..."}
             </div>
 
@@ -624,17 +538,20 @@ export default function BattleEditor() {
               ) : (
                 <div className="space-y-3">
                   {testcases.map((t, i) => (
-                    <div key={i} className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm">
+                    <div
+                      key={i}
+                      className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm"
+                    >
                       <div className="text-slate-300 font-semibold">Case {i + 1}</div>
 
                       <div className="mt-2">
                         <div className="text-xs text-slate-500">Input</div>
-                        <pre className="whitespace-pre-wrap">{t.input || "(empty)"}</pre>
+                        <pre className="whitespace-pre-wrap break-words">{t.input || "(empty)"}</pre>
                       </div>
 
                       <div className="mt-2">
                         <div className="text-xs text-slate-500">Expected</div>
-                        <pre className="whitespace-pre-wrap">{t.expected || "(empty)"}</pre>
+                        <pre className="whitespace-pre-wrap break-words">{t.expected || "(empty)"}</pre>
                       </div>
                     </div>
                   ))}
@@ -643,15 +560,14 @@ export default function BattleEditor() {
             </div>
           </div>
 
-          {/* ================= RIGHT PANEL ================= */}
-          <div className="bg-slate-900/60 rounded-2xl p-5 border border-slate-800 space-y-4">
-            <div className="flex justify-between items-center">
+          <div className="bg-slate-900/60 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-slate-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <div className="font-semibold text-lg">Code Editor</div>
 
               <select
                 value={language_id}
                 onChange={(e) => setLanguageId(Number(e.target.value))}
-                className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"
+                className="w-full sm:w-auto bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"
               >
                 {LANGS.map((l) => (
                   <option key={l.value} value={l.value}>
@@ -663,7 +579,7 @@ export default function BattleEditor() {
 
             <div className="rounded-xl overflow-hidden border border-slate-800">
               <Editor
-                height="420px"
+                height="360px"
                 language={language_id === 62 ? "java" : "python"}
                 theme="battle-pro"
                 beforeMount={(monaco) => {
@@ -695,18 +611,18 @@ export default function BattleEditor() {
             <button
               disabled={submitting || timeLeftMs <= 0}
               onClick={submit}
-              className="w-full p-3 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold disabled:opacity-60"
+              className="w-full h-11 sm:h-12 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold disabled:opacity-60"
             >
               {submitting ? "Submitting..." : timeLeftMs <= 0 ? "Time Over" : "Submit"}
             </button>
 
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="font-semibold">Result</div>
 
                 {submitResult?.verdict && (
                   <span
-                    className={`px-3 py-1 rounded-xl text-sm font-bold ${
+                    className={`px-3 py-1 rounded-xl text-sm font-bold shrink-0 ${
                       submitResult.verdict === "AC"
                         ? "bg-emerald-600"
                         : submitResult.verdict === "WA"
@@ -723,12 +639,14 @@ export default function BattleEditor() {
                 <div className="text-sm text-slate-400 mt-3">No result yet.</div>
               ) : (
                 <>
-                  <div className="text-sm text-slate-300 mt-2">{submitResult.message}</div>
+                  <div className="text-sm text-slate-300 mt-2 break-words">{submitResult.message}</div>
 
                   <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                     <div className="bg-slate-900 rounded-xl p-3 border border-slate-800">
                       <div className="text-slate-500 text-xs">Passed</div>
-                      <div className="font-bold">{passedCount}/{total || 0}</div>
+                      <div className="font-bold">
+                        {passedCount}/{total || 0}
+                      </div>
                     </div>
                     <div className="bg-slate-900 rounded-xl p-3 border border-slate-800">
                       <div className="text-slate-500 text-xs">Max Runtime</div>
@@ -748,16 +666,16 @@ export default function BattleEditor() {
                     {resultsArr.map((r) => (
                       <div
                         key={r.index}
-                        className="flex items-start justify-between bg-slate-900 rounded-xl p-3 border border-slate-800"
+                        className="flex items-start justify-between gap-3 bg-slate-900 rounded-xl p-3 border border-slate-800"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">Test {r.index}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-semibold shrink-0">Test {r.index}</span>
                           <span className={r.passed ? "text-emerald-400" : "text-rose-400"}>
                             {r.passed ? "✅" : "❌"}
                           </span>
                         </div>
 
-                        <div className="text-xs text-slate-400 text-right">
+                        <div className="text-xs text-slate-400 text-right shrink-0">
                           <div>{r.time ? `${r.time}s` : ""}</div>
                           <div>{r.memory ? `${r.memory} KB` : ""}</div>
                         </div>
@@ -766,16 +684,19 @@ export default function BattleEditor() {
                   </div>
 
                   {(resultsArr?.[0]?.compile_output || resultsArr?.[0]?.stderr) && (
-                    <div className="mt-3 bg-black/30 border border-rose-700 rounded-xl p-3 text-xs whitespace-pre-wrap">
+                    <div className="mt-3 bg-black/30 border border-rose-700 rounded-xl p-3 text-xs whitespace-pre-wrap break-words">
                       {resultsArr?.[0]?.compile_output || resultsArr?.[0]?.stderr}
                     </div>
                   )}
                 </>
               )}
             </div>
+
+            <div className="text-xs text-slate-500">
+              Socket: <span className="text-slate-300">{status}</span>
+            </div>
           </div>
         </div>
-
       </div>
     </div>
   );

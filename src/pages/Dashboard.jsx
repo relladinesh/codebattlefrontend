@@ -128,25 +128,25 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="bg-slate-950 text-white min-h-[calc(100vh-64px)]">
-      {/* TOP BAR (no navbar) */}
+    <div className="bg-slate-950 text-white min-h-[100svh]">
+      {/* TOP BAR */}
       <div className="border-b border-slate-800 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-5 py-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-5 py-4 sm:py-5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <button
               onClick={() => nav("/dashboard")}
-              className="text-xl font-extrabold tracking-tight text-slate-100 hover:text-white"
+              className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-100 hover:text-white whitespace-nowrap"
             >
               CodeBattle
             </button>
 
-            <div className="hidden md:block text-sm text-slate-400 truncate">
+            <div className="hidden lg:block text-sm text-slate-400 truncate">
               Welcome{user?.username ? `, ${user.username}` : ""} — Global battle history + quick actions
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:block text-sm text-slate-300">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="hidden sm:block text-sm text-slate-300 max-w-[40vw] truncate">
               {user?.username || user?.email}
             </span>
             <LogoutButton />
@@ -155,29 +155,29 @@ export default function Dashboard() {
       </div>
 
       {/* CONTENT */}
-      <div className="max-w-7xl mx-auto px-5 py-6 space-y-5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-5 py-5 sm:py-6 space-y-4 sm:space-y-5">
         {/* ACTIONS ROW */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Create */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
-            <div className="text-lg font-bold">Create Room</div>
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5">
+            <div className="text-base sm:text-lg font-bold">Create Room</div>
             <div className="text-sm text-slate-400 mt-1">
               Start a new battle and invite players.
             </div>
 
             <button
               onClick={() => nav("/create-room")}
-              className="mt-4 w-full px-4 py-3 rounded-xl font-semibold bg-slate-200 text-slate-900 hover:bg-white"
+              className="mt-4 w-full h-11 sm:h-12 px-4 rounded-xl font-semibold bg-slate-200 text-slate-900 hover:bg-white"
             >
               Create Room
             </button>
           </div>
 
           {/* Join */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 lg:col-span-2">
-            <div className="flex items-center justify-between gap-3">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:col-span-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <div className="text-lg font-bold">Join Room</div>
+                <div className="text-base sm:text-lg font-bold">Join Room</div>
                 <div className="text-sm text-slate-400 mt-1">
                   Paste room code to enter lobby.
                 </div>
@@ -185,7 +185,7 @@ export default function Dashboard() {
 
               <button
                 onClick={load}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
+                className="w-full sm:w-auto h-10 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
               >
                 Refresh
               </button>
@@ -196,20 +196,20 @@ export default function Dashboard() {
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value)}
                 placeholder="Enter room code (example: a1b2c3)"
-                className="flex-1 px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
+                className="w-full flex-1 h-11 sm:h-12 px-4 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
               />
 
               <button
                 disabled={joining}
                 onClick={joinRoom}
-                className="px-5 py-3 rounded-xl font-semibold bg-slate-200 text-slate-900 hover:bg-white disabled:opacity-60"
+                className="w-full sm:w-auto h-11 sm:h-12 px-5 rounded-xl font-semibold bg-slate-200 text-slate-900 hover:bg-white disabled:opacity-60"
               >
                 {joining ? "Joining..." : "Join"}
               </button>
             </div>
 
             {joinErr && (
-              <div className="mt-3 text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">
+              <div className="mt-3 text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-sm">
                 {joinErr}
               </div>
             )}
@@ -217,20 +217,20 @@ export default function Dashboard() {
         </div>
 
         {/* FILTERS */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4">
           <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-            <div className="flex-1 flex gap-3">
+            <div className="flex-1 flex flex-col sm:flex-row gap-3">
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search by topic, room code, winner, status..."
-                className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
+                className="w-full flex-1 h-11 sm:h-12 px-4 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
               />
 
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
+                className="w-full sm:w-56 h-11 sm:h-12 px-3 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
               >
                 <option value="ALL">All</option>
                 <option value="FINISHED">FINISHED</option>
@@ -243,10 +243,10 @@ export default function Dashboard() {
         </div>
 
         {/* HISTORY */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 flex items-center justify-between border-b border-slate-800">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl overflow-hidden">
+          <div className="px-4 sm:px-5 py-4 flex items-center justify-between border-b border-slate-800">
             <div>
-              <div className="text-lg font-bold">Global History</div>
+              <div className="text-base sm:text-lg font-bold">Global History</div>
               <div className="text-xs text-slate-400">
                 Showing {filtered.length} of {battles.length}
               </div>
@@ -254,15 +254,15 @@ export default function Dashboard() {
           </div>
 
           {err && (
-            <div className="px-5 py-4 text-rose-300 border-b border-slate-800">
+            <div className="px-4 sm:px-5 py-4 text-rose-300 border-b border-slate-800 text-sm">
               {err}
             </div>
           )}
 
           {loading ? (
-            <div className="px-5 py-10 text-slate-400">Loading battles...</div>
+            <div className="px-4 sm:px-5 py-10 text-slate-400">Loading battles...</div>
           ) : filtered.length === 0 ? (
-            <div className="px-5 py-10 text-slate-400">
+            <div className="px-4 sm:px-5 py-10 text-slate-400">
               No battles found for this filter.
             </div>
           ) : (
@@ -272,43 +272,54 @@ export default function Dashboard() {
                 return (
                   <div
                     key={b.roomCode}
-                    className="px-5 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 hover:bg-slate-900"
+                    className="px-4 sm:px-5 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 hover:bg-slate-900"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <div className="font-semibold">
+                        <div className="font-semibold truncate max-w-[70vw] sm:max-w-none">
                           {(b.topic || "TOPIC").toUpperCase()}
                         </div>
+
                         <Badge tone={statusTone(s)}>{s}</Badge>
-                        <span className="text-xs text-slate-400">
+
+                        <span className="text-xs text-slate-400 break-all">
                           Room: <span className="text-slate-200">{b.roomCode}</span>
                         </span>
                       </div>
 
-                      <div className="text-sm text-slate-300 mt-1">
-                        Players: <span className="text-white">{b.playerCount}</span>{" "}
-                        · Questions: <span className="text-white">{b.questionCount}</span>{" "}
-                        · Timer: <span className="text-white">{b.timerSeconds}s</span>
+                      <div className="text-sm text-slate-300 mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                        <span>
+                          Players: <span className="text-white">{b.playerCount}</span>
+                        </span>
+                        <span className="text-slate-500">·</span>
+                        <span>
+                          Questions: <span className="text-white">{b.questionCount}</span>
+                        </span>
+                        <span className="text-slate-500">·</span>
+                        <span>
+                          Timer: <span className="text-white">{b.timerSeconds}s</span>
+                        </span>
                       </div>
 
                       <div className="text-sm text-slate-400 mt-1">
                         Winner:{" "}
-                        <span className="text-emerald-300 font-semibold">
+                        <span className="text-emerald-300 font-semibold break-words">
                           {b.winnerUsername || "—"}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    {/* buttons responsive */}
+                    <div className="grid grid-cols-2 sm:flex gap-2 w-full lg:w-auto">
                       <button
                         onClick={() => nav(`/history/${b.roomCode}`)}
-                        className="px-4 py-2 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold"
+                        className="w-full px-4 py-2 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold"
                       >
                         Open
                       </button>
                       <button
                         onClick={() => navigator.clipboard?.writeText?.(b.roomCode)}
-                        className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
+                        className="w-full px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
                       >
                         Copy Code
                       </button>
@@ -320,7 +331,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="text-xs text-slate-500">
+        <div className="text-xs text-slate-500 px-1">
           Tip: Click <b>Open</b> to view battle details (<code>/history/:roomCode</code>).
         </div>
       </div>

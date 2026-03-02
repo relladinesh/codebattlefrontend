@@ -89,43 +89,45 @@ export default function CreateRoom() {
   const canCreate = !validationMsg;
 
   return (
-    <div className="bg-slate-950 text-white min-h-[calc(100vh-64px)]">
-      <div className="max-w-3xl mx-auto px-5 py-6 space-y-5">
+    <div className="bg-slate-950 text-white min-h-[100svh]">
+      <div className="max-w-3xl mx-auto px-4 sm:px-5 py-5 sm:py-6 space-y-4 sm:space-y-5">
         {/* Header */}
-        <div className="border border-slate-800 bg-slate-900/60 rounded-2xl p-5">
-          <div className="flex items-start justify-between gap-4">
+        <div className="border border-slate-800 bg-slate-900/60 rounded-xl sm:rounded-2xl p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
             <div className="min-w-0">
-              <h1 className="text-2xl font-extrabold tracking-tight">Create Room</h1>
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                Create Room
+              </h1>
               <p className="text-sm text-slate-300 mt-1">
                 Configure a battle room and share the room code with your friend.
               </p>
             </div>
 
-            <div className="text-xs px-3 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-300">
+            <div className="self-start text-xs px-3 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 whitespace-nowrap">
               Socket: <span className="text-white font-semibold">{status}</span>
             </div>
           </div>
 
           {err && (
-            <div className="mt-4 text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">
+            <div className="mt-4 text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-sm">
               {err}
             </div>
           )}
 
           {!err && !canCreate && (
-            <div className="mt-4 text-amber-200 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+            <div className="mt-4 text-amber-200 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-sm">
               {validationMsg}
             </div>
           )}
         </div>
 
         {/* Form */}
-        <div className="border border-slate-800 bg-slate-900/60 rounded-2xl p-6">
+        <div className="border border-slate-800 bg-slate-900/60 rounded-xl sm:rounded-2xl p-4 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <Field label="Topic" hint="Choose the topic set for random problems.">
                 <select
-                  className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
+                  className="w-full h-11 sm:h-12 px-4 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                 >
@@ -141,7 +143,7 @@ export default function CreateRoom() {
 
             <Field label="Question Count" hint="1 to 10 problems per battle.">
               <input
-                className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
+                className="w-full h-11 sm:h-12 px-4 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
                 type="number"
                 value={questionCount}
                 onChange={(e) => setQuestionCount(e.target.value)}
@@ -152,7 +154,7 @@ export default function CreateRoom() {
 
             <Field label="Max Players" hint="2 to 10 players.">
               <input
-                className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
+                className="w-full h-11 sm:h-12 px-4 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
                 type="number"
                 value={maxPlayers}
                 onChange={(e) => setMaxPlayers(e.target.value)}
@@ -162,9 +164,12 @@ export default function CreateRoom() {
             </Field>
 
             <div className="md:col-span-2">
-              <Field label="Timer (minutes)" hint={`Allowed: ${MIN_MINUTES}-${MAX_MINUTES} minutes`}>
+              <Field
+                label="Timer (minutes)"
+                hint={`Allowed: ${MIN_MINUTES}-${MAX_MINUTES} minutes`}
+              >
                 <input
-                  className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
+                  className="w-full h-11 sm:h-12 px-4 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
                   type="number"
                   value={timerMinutes}
                   onChange={(e) => setTimerMinutes(e.target.value)}
@@ -174,18 +179,19 @@ export default function CreateRoom() {
               </Field>
             </div>
 
-            <div className="md:col-span-2 flex gap-2">
+            {/* Buttons: stack on mobile, inline on bigger screens */}
+            <div className="md:col-span-2 flex flex-col sm:flex-row gap-2">
               <button
                 onClick={createRoom}
                 disabled={!canCreate}
-                className="flex-1 px-4 py-3 rounded-xl font-semibold bg-slate-200 text-slate-900 hover:bg-white disabled:opacity-50 disabled:hover:bg-slate-200"
+                className="w-full sm:flex-1 h-11 sm:h-12 px-4 rounded-xl font-semibold bg-slate-200 text-slate-900 hover:bg-white disabled:opacity-50 disabled:hover:bg-slate-200"
               >
                 Create Room
               </button>
 
               <button
                 onClick={() => nav("/dashboard")}
-                className="px-4 py-3 rounded-xl font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700"
+                className="w-full sm:w-auto h-11 sm:h-12 px-4 rounded-xl font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700"
               >
                 Back
               </button>
@@ -193,8 +199,8 @@ export default function CreateRoom() {
           </div>
         </div>
 
-        {/* Small footer */}
-        <div className="text-xs text-slate-500">
+        {/* Footer */}
+        <div className="text-xs text-slate-500 px-1">
           After room creation, you will be redirected to Lobby (<code>/room/:roomId</code>).
         </div>
       </div>

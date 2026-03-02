@@ -36,9 +36,9 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl">
-        <h1 className="text-2xl font-bold">Register</h1>
+    <div className="min-h-[100svh] bg-slate-950 text-white flex items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-md bg-slate-900/70 border border-slate-800 rounded-xl sm:rounded-2xl p-5 sm:p-6 shadow-xl">
+        <h1 className="text-xl sm:text-2xl font-bold">Register</h1>
 
         {err && (
           <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-200 text-sm">
@@ -48,23 +48,25 @@ export default function Register() {
 
         <form onSubmit={onSubmit} className="mt-5 space-y-3">
           <input
-            className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500"
+            className="w-full h-11 sm:h-12 px-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500 text-sm sm:text-base"
             name="username"
             placeholder="Username"
             value={form.username}
             onChange={onChange}
             autoComplete="username"
           />
+
           <input
-            className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500"
+            className="w-full h-11 sm:h-12 px-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500 text-sm sm:text-base"
             name="email"
             placeholder="Email"
             value={form.email}
             onChange={onChange}
             autoComplete="email"
           />
+
           <input
-            className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500"
+            className="w-full h-11 sm:h-12 px-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500 text-sm sm:text-base"
             name="password"
             type="password"
             placeholder="Password"
@@ -75,7 +77,7 @@ export default function Register() {
 
           <button
             disabled={loading}
-            className="w-full p-3 rounded-xl bg-purple-700 hover:bg-purple-600 font-semibold disabled:opacity-60"
+            className="w-full h-11 sm:h-12 rounded-xl bg-purple-700 hover:bg-purple-600 font-semibold disabled:opacity-60 text-sm sm:text-base"
           >
             {loading ? "Please wait..." : "Create account"}
           </button>
