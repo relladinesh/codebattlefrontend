@@ -120,65 +120,94 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-slate-950 text-white flex items-center justify-center px-4 py-8 sm:px-6">
-      <div className="w-full max-w-md">
-        <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
-          <h1 className="text-xl sm:text-2xl font-bold">Login</h1>
+  <div className="relative min-h-[100svh] w-full bg-[#06060b] text-white flex items-center justify-center px-4 py-10 overflow-hidden">
+    {/* 🔥 Landing-like background */}
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-fuchsia-600/20 blur-3xl" />
+      <div className="absolute top-10 right-[-120px] h-[520px] w-[520px] rounded-full bg-indigo-600/20 blur-3xl" />
+      <div className="absolute bottom-[-220px] left-[20%] h-[520px] w-[520px] rounded-full bg-cyan-500/10 blur-3xl" />
 
-          {err && (
-            <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-200 text-sm">
-              {err}
-            </div>
-          )}
+      <div
+        className="absolute inset-0 opacity-[0.08]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+        }}
+      />
 
-          <form onSubmit={onSubmit} className="mt-5 space-y-3">
-            <input
-              className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500 text-base sm:text-sm"
-              name="email"
-              placeholder="Email"
-              value={form.email}
-              onChange={onChange}
-              autoComplete="email"
-            />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/70" />
+    </div>
 
-            <input
-              className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500 text-base sm:text-sm"
-              name="password"
-              type="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={onChange}
-              autoComplete="current-password"
-            />
-
-            <button
-              disabled={loading}
-              className="w-full min-h-[44px] p-3 rounded-xl bg-purple-700 hover:bg-purple-600 font-semibold disabled:opacity-60 transition"
-            >
-              {loading ? "Please wait..." : "Login"}
-            </button>
-          </form>
-
-          <div className="my-6 text-center text-slate-400 text-sm">OR</div>
-
-          {/* ✅ Responsive Google button wrapper */}
-          <div className="w-full flex justify-center">
-            <div className="w-full max-w-[320px] overflow-hidden">
-              <div ref={googleBtnRef} className="w-full" />
-            </div>
-          </div>
-
-          <p className="mt-5 text-sm text-slate-300 text-center">
-            New here?{" "}
-            <Link className="text-blue-400 underline" to="/register">
-              Create account
-            </Link>
+    {/* Content */}
+    <div className="relative z-10 w-full max-w-md">
+      <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-6 sm:p-7 shadow-[0_30px_120px_-60px_rgba(0,0,0,0.9)] backdrop-blur">
+        <div className="mb-5">
+          <h1 className="text-2xl font-extrabold tracking-tight">Welcome back</h1>
+          <p className="mt-1 text-sm text-white/65">
+            Login to continue your CodeBattle journey.
           </p>
         </div>
 
-        {/* Optional: extra small footer spacing on tiny screens */}
-        <div className="h-2 sm:h-0" />
+        {err && (
+          <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
+            {err}
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} className="space-y-3">
+          <input
+            className="w-full rounded-2xl border border-white/10 bg-black/30 p-3 outline-none focus:border-fuchsia-400/60"
+            name="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={onChange}
+            autoComplete="email"
+          />
+
+          <input
+            className="w-full rounded-2xl border border-white/10 bg-black/30 p-3 outline-none focus:border-fuchsia-400/60"
+            name="password"
+            type="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={onChange}
+            autoComplete="current-password"
+          />
+
+          <button
+            disabled={loading}
+            className="w-full min-h-[46px] rounded-2xl bg-gradient-to-r from-fuchsia-500 to-indigo-500 px-4 py-3 font-semibold shadow-lg shadow-fuchsia-500/20 hover:opacity-95 disabled:opacity-60 active:scale-[0.99] transition"
+          >
+            {loading ? "Please wait..." : "Login"}
+          </button>
+        </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-white/10" />
+          <span className="text-xs text-white/50">OR</span>
+          <div className="h-px flex-1 bg-white/10" />
+        </div>
+
+        {/* ✅ Responsive Google button wrapper (same as yours) */}
+        <div className="w-full flex justify-center">
+          <div className="w-full max-w-[320px] overflow-hidden rounded-xl">
+            <div ref={googleBtnRef} className="w-full" />
+          </div>
+        </div>
+
+        <p className="mt-5 text-center text-sm text-white/70">
+          New here?{" "}
+          <Link className="text-fuchsia-300 underline hover:text-fuchsia-200" to="/register">
+            Create account
+          </Link>
+        </p>
       </div>
+
+      <p className="mt-6 text-center text-xs text-white/40">
+        © {new Date().getFullYear()} CodeBattle — Compete. Compile. Conquer.
+      </p>
     </div>
-  );
+  </div>
+);
 }

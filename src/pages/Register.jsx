@@ -36,19 +36,48 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-slate-950 text-white flex items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-md bg-slate-900/70 border border-slate-800 rounded-xl sm:rounded-2xl p-5 sm:p-6 shadow-xl">
-        <h1 className="text-xl sm:text-2xl font-bold">Register</h1>
+  <div className="relative min-h-[100svh] w-full bg-[#06060b] text-white flex items-center justify-center px-4 py-10 overflow-hidden">
+    
+    {/* 🔥 Landing-style Background */}
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-fuchsia-600/20 blur-3xl" />
+      <div className="absolute top-10 right-[-120px] h-[520px] w-[520px] rounded-full bg-indigo-600/20 blur-3xl" />
+      <div className="absolute bottom-[-220px] left-[20%] h-[520px] w-[520px] rounded-full bg-cyan-500/10 blur-3xl" />
+
+      <div
+        className="absolute inset-0 opacity-[0.08]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+        }}
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/70" />
+    </div>
+
+    {/* Content */}
+    <div className="relative z-10 w-full max-w-md">
+      <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-6 sm:p-7 shadow-[0_30px_120px_-60px_rgba(0,0,0,0.9)] backdrop-blur">
+        
+        <div className="mb-5">
+          <h1 className="text-2xl font-extrabold tracking-tight">
+            Create Account
+          </h1>
+          <p className="mt-1 text-sm text-white/65">
+            Join CodeBattle and start competing today.
+          </p>
+        </div>
 
         {err && (
-          <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-200 text-sm">
+          <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
             {err}
           </div>
         )}
 
-        <form onSubmit={onSubmit} className="mt-5 space-y-3">
+        <form onSubmit={onSubmit} className="space-y-3">
           <input
-            className="w-full h-11 sm:h-12 px-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500 text-sm sm:text-base"
+            className="w-full rounded-2xl border border-white/10 bg-black/30 p-3 outline-none focus:border-fuchsia-400/60"
             name="username"
             placeholder="Username"
             value={form.username}
@@ -57,7 +86,7 @@ export default function Register() {
           />
 
           <input
-            className="w-full h-11 sm:h-12 px-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500 text-sm sm:text-base"
+            className="w-full rounded-2xl border border-white/10 bg-black/30 p-3 outline-none focus:border-fuchsia-400/60"
             name="email"
             placeholder="Email"
             value={form.email}
@@ -66,7 +95,7 @@ export default function Register() {
           />
 
           <input
-            className="w-full h-11 sm:h-12 px-3 rounded-xl bg-slate-800 border border-slate-700 outline-none focus:border-purple-500 text-sm sm:text-base"
+            className="w-full rounded-2xl border border-white/10 bg-black/30 p-3 outline-none focus:border-fuchsia-400/60"
             name="password"
             type="password"
             placeholder="Password"
@@ -77,19 +106,27 @@ export default function Register() {
 
           <button
             disabled={loading}
-            className="w-full h-11 sm:h-12 rounded-xl bg-purple-700 hover:bg-purple-600 font-semibold disabled:opacity-60 text-sm sm:text-base"
+            className="w-full min-h-[46px] rounded-2xl bg-gradient-to-r from-fuchsia-500 to-indigo-500 px-4 py-3 font-semibold shadow-lg shadow-fuchsia-500/20 hover:opacity-95 disabled:opacity-60 active:scale-[0.99] transition"
           >
             {loading ? "Please wait..." : "Create account"}
           </button>
         </form>
 
-        <p className="mt-5 text-sm text-slate-300 text-center">
+        <p className="mt-5 text-center text-sm text-white/70">
           Already have an account?{" "}
-          <Link className="text-blue-400 underline" to="/">
+          <Link
+            className="text-fuchsia-300 underline hover:text-fuchsia-200"
+            to="/login"
+          >
             Login
           </Link>
         </p>
       </div>
+
+      <p className="mt-6 text-center text-xs text-white/40">
+        © {new Date().getFullYear()} CodeBattle — Compete. Compile. Conquer.
+      </p>
     </div>
-  );
+  </div>
+);
 }

@@ -9,5 +9,5 @@ export async function getRecentBattlesApi(limit = 20) {
 
 export async function getBattleDetailsApi(roomCode) {
   const { data } = await http.get(`/api/history/${roomCode}`);
-  return data; // {ok:true, ...details}
+  return data; 
 }

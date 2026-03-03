@@ -24,41 +24,6 @@ function token(langId, name) {
   return langId === 62 ? `//${name}` : `#${name}`;
 }
 
-const BATTLE_PRO_THEME = {
-  base: "vs-dark",
-  inherit: true,
-  rules: [
-    { token: "", foreground: "E2E8F0" },
-    { token: "keyword", foreground: "C084FC", fontStyle: "bold" },
-    { token: "keyword.control", foreground: "C084FC", fontStyle: "bold" },
-    { token: "type", foreground: "93C5FD" },
-    { token: "type.identifier", foreground: "93C5FD" },
-    { token: "identifier.function", foreground: "FCD34D" },
-    { token: "string", foreground: "86EFAC" },
-    { token: "number", foreground: "FCA5A5" },
-    { token: "comment", foreground: "64748B", fontStyle: "italic" },
-    { token: "operator", foreground: "A5B4FC" },
-    { token: "delimiter", foreground: "CBD5F5" },
-  ],
-  colors: {
-    "editor.background": "#020617",
-    "editor.foreground": "#E2E8F0",
-    "editorCursor.foreground": "#A855F7",
-    "editor.selectionBackground": "#4c1d95",
-    "editor.inactiveSelectionBackground": "#312e81",
-    "editor.lineHighlightBackground": "#0f172a",
-    "editorLineNumber.foreground": "#64748b",
-    "editorLineNumber.activeForeground": "#c084fc",
-    "editorBracketMatch.background": "#6d28d966",
-    "editorBracketMatch.border": "#a855f7",
-    "scrollbarSlider.background": "#47556955",
-    "scrollbarSlider.hoverBackground": "#47556988",
-    "scrollbarSlider.activeBackground": "#475569AA",
-    "editorIndentGuide.background1": "#0f172a",
-    "editorIndentGuide.activeBackground1": "#6d28d9",
-  },
-};
-
 function ensureMarkers(code, language_id, fnName = "") {
   if (!code) return "";
 
@@ -174,6 +139,69 @@ function formatMMSS(ms) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/* -----------------------------
+   Premium UI Helpers
+------------------------------*/
+function GlowBG() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-fuchsia-600/20 blur-3xl" />
+      <div className="absolute top-10 right-[-120px] h-[520px] w-[520px] rounded-full bg-indigo-600/20 blur-3xl" />
+      <div className="absolute bottom-[-220px] left-[20%] h-[520px] w-[520px] rounded-full bg-cyan-500/10 blur-3xl" />
+      <div
+        className="absolute inset-0 opacity-[0.08]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/70" />
+    </div>
+  );
+}
+
+function GlassCard({ children, className = "" }) {
+  return (
+    <div
+      className={[
+        "relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] shadow-[0_30px_120px_-60px_rgba(0,0,0,0.9)] backdrop-blur",
+        className,
+      ].join(" ")}
+    >
+      <div className="pointer-events-none absolute inset-0 opacity-70">
+        <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-fuchsia-500/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
+      </div>
+      <div className="relative z-10">{children}</div>
+    </div>
+  );
+}
+
+function Pill({ active, children, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        "px-4 py-2 rounded-2xl font-semibold whitespace-nowrap transition border",
+        active
+          ? "bg-white text-black border-white/20"
+          : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10",
+      ].join(" ")}
+    >
+      {children}
+    </button>
+  );
+}
+
+function StatPill({ label, value }) {
+  return (
+    <div className="px-4 py-2 rounded-2xl bg-black/30 border border-white/10 text-center">
+      <div className="text-[11px] text-white/55">{label}</div>
+      <div className="text-lg font-extrabold">{value}</div>
+    </div>
+  );
+}
 export default function BattleEditor() {
   const { roomId } = useParams();
   const nav = useNavigate();
@@ -231,6 +259,8 @@ export default function BattleEditor() {
       if (ack?.ok && ack.room) {
         setRoom(ack.room);
         if (ack.room?.status === "FINISHED") setShowLeaderboard(true);
+      } else if (ack?.message) {
+        setErr(ack.message);
       }
     });
 
@@ -406,168 +436,224 @@ export default function BattleEditor() {
     .map((p) => ({ ...p, score: Number(scores?.[p.userId] ?? 0) }))
     .sort((a, b) => b.score - a.score);
 
-  const winnerId = room?.winner || (sortedPlayers[0]?.userId ?? "");
-  const winner = sortedPlayers.find((p) => p.userId === winnerId) || sortedPlayers[0] || null;
+  // ✅ DRAW / WINNER LOGIC (fix host auto-winner)
+  const topScore = sortedPlayers[0]?.score ?? 0;
+  const secondScore = sortedPlayers[1]?.score ?? null;
 
-  if (showLeaderboard || room?.status === "FINISHED") {
+  const isBackendDraw = room?.isDraw === true || !!room?.drawReason;
+  const isWinnerMissing = !room?.winner;
+  const isTie = sortedPlayers.length >= 2 && secondScore === topScore;
+  const isAllZero = sortedPlayers.length > 0 && topScore <= 0;
+
+  const isDraw = isBackendDraw || isWinnerMissing || isTie || isAllZero;
+
+  const winnerId = !isDraw ? room?.winner : "";
+  const winner =
+    !isDraw && winnerId
+      ? sortedPlayers.find((p) => p.userId === winnerId) || null
+      : null;
+
+      if (showLeaderboard || room?.status === "FINISHED") {
     return (
-      <div className="min-h-[100svh] bg-slate-950 text-white p-4 sm:p-6">
-        <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
-            <div className="text-2xl sm:text-3xl font-bold">🏆 Contest Finished</div>
-            <div className="text-sm text-slate-400 mt-1 break-all">Room: {roomId}</div>
-          </div>
+      <div className="relative min-h-[100svh] w-full bg-[#06060b] text-white overflow-hidden">
+        <GlowBG />
+        <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-5">
+          <GlassCard className="p-5 sm:p-6">
+            <div className="text-2xl sm:text-3xl font-extrabold">🏁 Contest Finished</div>
+            <div className="text-sm text-white/55 mt-1 break-all">Room: {roomId}</div>
+          </GlassCard>
 
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
-            <div className="text-sm text-slate-400">Winner</div>
-            <div className="text-xl sm:text-2xl font-bold mt-1 break-words">
-              {winner ? (winner.email || winner.userId) : "N/A"}
+          <GlassCard className="p-5 sm:p-6">
+            <div className="text-sm text-white/55">{isDraw ? "Result" : "Winner"}</div>
+            <div className="text-xl sm:text-2xl font-extrabold mt-1 break-words">
+              {isDraw ? "🤝 DRAW" : winner ? (winner.email || winner.userId) : "N/A"}
             </div>
-            <div className="text-sm mt-2 text-slate-300">
-              Final Score: <span className="font-bold">{winner?.score ?? 0}</span>
-            </div>
-          </div>
 
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
-            <div className="text-lg font-semibold mb-4">Leaderboard</div>
+            <div className="text-sm mt-2 text-white/70">
+              Final Score:{" "}
+              <span className="font-extrabold text-white">
+                {isDraw ? topScore : winner?.score ?? 0}
+              </span>
+            </div>
+
+            {isDraw && (
+              <div className="text-xs text-white/50 mt-2">
+                {room?.drawReason ? `Reason: ${room.drawReason}` : "Reason: Tie / No one scored"}
+              </div>
+            )}
+          </GlassCard>
+
+          <GlassCard className="p-5 sm:p-6">
+            <div className="text-lg font-bold mb-4">Leaderboard</div>
 
             <div className="space-y-3">
               {sortedPlayers.length ? (
                 sortedPlayers.map((p, idx) => (
                   <div
                     key={p.userId}
-                    className="flex items-center justify-between gap-3 bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4"
+                    className="flex items-center justify-between gap-3 bg-black/30 border border-white/10 rounded-2xl p-3 sm:p-4"
                   >
                     <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                      <div className="w-9 sm:w-10 text-center font-bold text-base sm:text-lg shrink-0">
+                      <div className="w-10 text-center font-extrabold text-base sm:text-lg shrink-0">
                         {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx + 1}`}
                       </div>
                       <div className="min-w-0">
                         <div className="font-semibold truncate">{p.email || p.userId}</div>
-                        <div className="text-xs text-slate-500 truncate">{p.userId}</div>
+                        <div className="text-xs text-white/45 truncate">{p.userId}</div>
                       </div>
                     </div>
-                    <div className="text-lg sm:text-xl font-bold shrink-0">{p.score}</div>
+                    <div className="text-lg sm:text-xl font-extrabold shrink-0">{p.score}</div>
                   </div>
                 ))
               ) : (
-                <div className="text-sm text-slate-400">No players found.</div>
+                <div className="text-sm text-white/55">No players found.</div>
               )}
             </div>
 
             <button
               onClick={() => nav("/dashboard")}
-              className="mt-6 w-full h-11 sm:h-12 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold"
+              className="mt-6 w-full h-12 rounded-2xl bg-white text-black hover:bg-white/90 font-semibold"
             >
               Back to Dashboard
             </button>
-          </div>
+          </GlassCard>
         </div>
       </div>
     );
   }
+    return (
+    <div className="relative min-h-[100svh] w-full bg-[#06060b] text-white overflow-hidden">
+      <GlowBG />
 
-  return (
-    <div className="min-h-[100svh] bg-slate-950 text-white">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-4">
-        <div className="bg-slate-900/60 rounded-xl sm:rounded-2xl p-3 border border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex gap-2 overflow-x-auto pb-1 -mb-1">
-            {questions.map((p, idx) => (
-              <button
-                key={p.id || p.problemId || idx}
-                onClick={() => setActiveIdx(idx)}
-                className={`px-4 py-2 rounded-xl font-semibold whitespace-nowrap transition ${
-                  idx === activeIdx
-                    ? "bg-slate-200 text-slate-900"
-                    : "bg-slate-800 hover:bg-slate-700 border border-slate-700"
-                }`}
-              >
-                Problem {idx + 1}
-              </button>
-            ))}
-          </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 py-5 space-y-4">
+        {/* TOP BAR */}
+        <GlassCard className="p-3 sm:p-4">
+          <div className="flex flex-col gap-3">
+            {/* Tabs + room */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {questions.map((p, idx) => (
+                  <Pill key={p.id || p.problemId || idx} active={idx === activeIdx} onClick={() => setActiveIdx(idx)}>
+                    Problem {idx + 1}
+                  </Pill>
+                ))}
+              </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="px-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-center">
-              <div className="text-[11px] text-slate-400">Time Left</div>
-              <div className="text-lg font-bold">
-                {room?.status === "ACTIVE" ? formatMMSS(timeLeftMs) : "--:--"}
+              <div className="hidden md:flex items-center gap-2 shrink-0">
+                <div className="text-xs text-white/50">
+                  Room: <span className="text-white/80 font-semibold">{roomId}</span>
+                </div>
               </div>
             </div>
 
-            <button
-              onClick={() => nav("/dashboard")}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
-            >
-              Exit
-            </button>
-          </div>
-        </div>
+            {/* timer + actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <StatPill
+                  label="Time Left"
+                  value={room?.status === "ACTIVE" ? formatMMSS(timeLeftMs) : "--:--"}
+                />
+                <StatPill label="Status" value={room?.status || "—"} />
+                <StatPill label="Socket" value={status || "—"} />
+              </div>
 
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowLeaderboard(true)}
+                  className="h-11 px-4 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/15 font-semibold"
+                >
+                  Leaderboard
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (!socket) return nav("/dashboard");
+                    socket.emit("room:leave", { roomId }, () => nav("/dashboard"));
+                    setTimeout(() => nav("/dashboard"), 300);
+                  }}
+                  className="h-11 px-4 rounded-2xl bg-white text-black hover:bg-white/90 font-semibold"
+                >
+                  Exit
+                </button>
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Error */}
         {err && (
-          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-200 rounded-xl sm:rounded-2xl p-4 text-sm">
+          <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-200">
             {err}
           </div>
         )}
 
+        {/* MAIN GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-slate-900/60 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-slate-800 space-y-4">
+          {/* LEFT: problem */}
+          <GlassCard className="p-4 sm:p-5 space-y-4">
             <div className="min-w-0">
-              <div className="text-lg sm:text-xl font-bold break-words">
+              <div className="text-xl sm:text-2xl font-extrabold break-words">
                 {problem?.title || "Loading problem..."}
               </div>
-              <div className="text-sm text-slate-400">
-                {problem?.topic ? `Topic: ${problem.topic}` : ""}{" "}
-                {problem?.difficulty ? `· Difficulty: ${problem.difficulty}` : ""}
+              <div className="text-sm text-white/60 mt-1">
+                {problem?.topic ? `Topic: ${problem.topic}` : ""}
+                {problem?.difficulty ? ` · Difficulty: ${problem.difficulty}` : ""}
               </div>
               {!!problem?.fnName && (
-                <div className="text-xs text-slate-500 mt-1 break-all">
-                  Function: <span className="text-slate-300 font-semibold">{problem.fnName}</span>
+                <div className="text-xs text-white/45 mt-1 break-all">
+                  Function: <span className="text-white/70 font-semibold">{problem.fnName}</span>
                 </div>
               )}
             </div>
 
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm whitespace-pre-wrap min-h-[160px] sm:min-h-[180px]">
+            <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm whitespace-pre-wrap min-h-[160px]">
               {problem?.statement || "Loading statement..."}
             </div>
 
             <div>
               <div className="font-semibold mb-2">Sample Testcases</div>
               {!testcases?.length ? (
-                <div className="text-sm text-slate-400">No sample testcases received.</div>
+                <div className="text-sm text-white/55">No sample testcases received.</div>
               ) : (
                 <div className="space-y-3">
                   {testcases.map((t, i) => (
-                    <div
-                      key={i}
-                      className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm"
-                    >
-                      <div className="text-slate-300 font-semibold">Case {i + 1}</div>
+                    <div key={i} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm">
+                      <div className="text-white/80 font-semibold">Case {i + 1}</div>
 
                       <div className="mt-2">
-                        <div className="text-xs text-slate-500">Input</div>
-                        <pre className="whitespace-pre-wrap break-words">{t.input || "(empty)"}</pre>
+                        <div className="text-xs text-white/50">Input</div>
+                        <pre className="whitespace-pre-wrap break-words text-white/80">
+                          {t.input || "(empty)"}
+                        </pre>
                       </div>
 
                       <div className="mt-2">
-                        <div className="text-xs text-slate-500">Expected</div>
-                        <pre className="whitespace-pre-wrap break-words">{t.expected || "(empty)"}</pre>
+                        <div className="text-xs text-white/50">Expected</div>
+                        <pre className="whitespace-pre-wrap break-words text-white/80">
+                          {t.expected || "(empty)"}
+                        </pre>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
+          </GlassCard>
 
-          <div className="bg-slate-900/60 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-slate-800 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-              <div className="font-semibold text-lg">Code Editor</div>
+          {/* RIGHT: editor + submit + results */}
+          <GlassCard className="p-4 sm:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <div className="text-lg font-bold">Code Editor</div>
+                <div className="text-xs text-white/50">
+                  Edit only inside the marked regions (anti-copy/paste enabled).
+                </div>
+              </div>
 
               <select
                 value={language_id}
                 onChange={(e) => setLanguageId(Number(e.target.value))}
-                className="w-full sm:w-auto bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"
+                className="w-full sm:w-auto h-11 px-3 rounded-2xl bg-black/30 border border-white/10 outline-none focus:border-fuchsia-400/60"
               >
                 {LANGS.map((l) => (
                   <option key={l.value} value={l.value}>
@@ -577,125 +663,80 @@ export default function BattleEditor() {
               </select>
             </div>
 
-            <div className="rounded-xl overflow-hidden border border-slate-800">
+            <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/30">
               <Editor
-                height="360px"
+                height="55vh"
                 language={language_id === 62 ? "java" : "python"}
-                theme="battle-pro"
-                beforeMount={(monaco) => {
-                  monaco.editor.defineTheme("battle-pro", BATTLE_PRO_THEME);
-                }}
                 value={source_code}
+                onMount={(editor) => {
+                  editorRef.current = editor;
+                  attachMonacoGuards(editor);
+                }}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,
-                  tabSize: 2,
                   scrollBeyondLastLine: false,
-                  wordWrap: "on",
-                  cursorBlinking: "smooth",
-                  smoothScrolling: true,
-                  padding: { top: 12, bottom: 12 },
-                  renderLineHighlight: "all",
-                  bracketPairColorization: { enabled: true },
-                  autoClosingBrackets: "always",
-                  autoClosingQuotes: "always",
-                }}
-                onMount={(editor) => {
-                  editorRef.current = editor;
-                  lastGoodRef.current = editor.getValue() || source_code || "";
-                  attachMonacoGuards(editor);
+                  automaticLayout: true,
                 }}
               />
             </div>
 
-            <button
-              disabled={submitting || timeLeftMs <= 0}
-              onClick={submit}
-              className="w-full h-11 sm:h-12 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold disabled:opacity-60"
-            >
-              {submitting ? "Submitting..." : timeLeftMs <= 0 ? "Time Over" : "Submit"}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={submit}
+                disabled={submitting || room?.status !== "ACTIVE" || timeLeftMs <= 0}
+                className="w-full sm:flex-1 h-12 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-indigo-500 font-semibold shadow-lg shadow-fuchsia-500/20 hover:opacity-95 disabled:opacity-50"
+              >
+                {submitting ? "Submitting..." : "Submit"}
+              </button>
 
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="font-semibold">Result</div>
+              <button
+                onClick={() => {
+                  setSubmitResult(null);
+                  setErr("");
+                }}
+                className="w-full sm:w-auto h-12 px-5 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/15 font-semibold"
+              >
+                Clear Result
+              </button>
+            </div>
 
-                {submitResult?.verdict && (
-                  <span
-                    className={`px-3 py-1 rounded-xl text-sm font-bold shrink-0 ${
-                      submitResult.verdict === "AC"
-                        ? "bg-emerald-600"
-                        : submitResult.verdict === "WA"
-                        ? "bg-rose-600"
-                        : "bg-amber-600"
-                    }`}
-                  >
-                    {submitResult.verdict}
-                  </span>
-                )}
+            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="font-semibold">Submission Result</div>
+                <div className="text-xs text-white/55">
+                  Passed: <span className="text-white/80 font-semibold">{passedCount}</span>/{total || 0}
+                  {" · "}Max Time: <span className="text-white/80 font-semibold">{maxTime || 0}</span>
+                  {" · "}Max Mem: <span className="text-white/80 font-semibold">{maxMem || 0}</span>
+                </div>
               </div>
 
               {!submitResult ? (
-                <div className="text-sm text-slate-400 mt-3">No result yet.</div>
+                <div className="mt-2 text-sm text-white/55">No submission yet.</div>
               ) : (
-                <>
-                  <div className="text-sm text-slate-300 mt-2 break-words">{submitResult.message}</div>
-
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                    <div className="bg-slate-900 rounded-xl p-3 border border-slate-800">
-                      <div className="text-slate-500 text-xs">Passed</div>
-                      <div className="font-bold">
-                        {passedCount}/{total || 0}
+                <div className="mt-3 space-y-2">
+                  {(resultsArr || []).map((r, idx) => (
+                    <div
+                      key={idx}
+                      className={[
+                        "flex items-center justify-between gap-3 rounded-xl border p-3 text-sm",
+                        r.passed
+                          ? "border-emerald-500/25 bg-emerald-500/10"
+                          : "border-rose-500/25 bg-rose-500/10",
+                      ].join(" ")}
+                    >
+                      <div className="font-semibold">
+                        Test {idx + 1} — {r.passed ? "PASSED ✅" : "FAILED ❌"}
+                      </div>
+                      <div className="text-xs text-white/70">
+                        {Number(r.time || 0)}s · {Number(r.memory || 0)}KB
                       </div>
                     </div>
-                    <div className="bg-slate-900 rounded-xl p-3 border border-slate-800">
-                      <div className="text-slate-500 text-xs">Max Runtime</div>
-                      <div className="font-bold">{maxTime ? `${maxTime}s` : "-"}</div>
-                    </div>
-                    <div className="bg-slate-900 rounded-xl p-3 border border-slate-800">
-                      <div className="text-slate-500 text-xs">Max Memory</div>
-                      <div className="font-bold">{maxMem ? `${maxMem} KB` : "-"}</div>
-                    </div>
-                    <div className="bg-slate-900 rounded-xl p-3 border border-slate-800">
-                      <div className="text-slate-500 text-xs">Language</div>
-                      <div className="font-bold">{language_id === 62 ? "Java" : "Python"}</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    {resultsArr.map((r) => (
-                      <div
-                        key={r.index}
-                        className="flex items-start justify-between gap-3 bg-slate-900 rounded-xl p-3 border border-slate-800"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-semibold shrink-0">Test {r.index}</span>
-                          <span className={r.passed ? "text-emerald-400" : "text-rose-400"}>
-                            {r.passed ? "✅" : "❌"}
-                          </span>
-                        </div>
-
-                        <div className="text-xs text-slate-400 text-right shrink-0">
-                          <div>{r.time ? `${r.time}s` : ""}</div>
-                          <div>{r.memory ? `${r.memory} KB` : ""}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {(resultsArr?.[0]?.compile_output || resultsArr?.[0]?.stderr) && (
-                    <div className="mt-3 bg-black/30 border border-rose-700 rounded-xl p-3 text-xs whitespace-pre-wrap break-words">
-                      {resultsArr?.[0]?.compile_output || resultsArr?.[0]?.stderr}
-                    </div>
-                  )}
-                </>
+                  ))}
+                </div>
               )}
             </div>
-
-            <div className="text-xs text-slate-500">
-              Socket: <span className="text-slate-300">{status}</span>
-            </div>
-          </div>
+          </GlassCard>
         </div>
       </div>
     </div>

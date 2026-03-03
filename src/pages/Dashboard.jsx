@@ -5,6 +5,25 @@ import { useAuth } from "../store/auth";
 import { makeSocket } from "../lib/socket";
 import LogoutButton from "../components/logout/logout";
 
+/* -----------------------------
+   UI Helpers
+------------------------------*/
+function Chip({ active, children, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
+        active
+          ? "bg-white text-black border-white/20"
+          : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10",
+      ].join(" ")}
+    >
+      {children}
+    </button>
+  );
+}
+
 function Badge({ children, tone = "slate" }) {
   const cls =
     tone === "green"
@@ -30,13 +49,45 @@ function statusTone(status) {
   return "slate";
 }
 
+function GlowShell({ children }) {
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] shadow-[0_30px_120px_-60px_rgba(0,0,0,0.9)] backdrop-blur">
+      <div className="pointer-events-none absolute inset-0 opacity-70">
+        <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-fuchsia-500/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
+      </div>
+      <div className="relative z-10">{children}</div>
+    </div>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <div className="px-5 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border-b border-white/10">
+      <div className="space-y-2 w-full">
+        <div className="h-4 w-56 bg-white/10 rounded" />
+        <div className="h-3 w-80 bg-white/10 rounded" />
+        <div className="h-3 w-40 bg-white/10 rounded" />
+      </div>
+      <div className="flex gap-2 w-full lg:w-auto">
+        <div className="h-9 w-full lg:w-24 bg-white/10 rounded-xl" />
+        <div className="h-9 w-full lg:w-28 bg-white/10 rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------
+   Main
+------------------------------*/
 export default function Dashboard() {
   const nav = useNavigate();
   const { user, token } = useAuth();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [battles, setBattles] = useState([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   // filters
   const [q, setQ] = useState("");
@@ -67,28 +118,30 @@ export default function Dashboard() {
     };
   }, [token, nav]);
 
-  async function load() {
+  async function loadHistory(limit = 20) {
     try {
       setErr("");
       setLoading(true);
-      const res = await getRecentBattlesApi(100);
+
+      const res = await getRecentBattlesApi(limit);
+
       if (!res || !Array.isArray(res.battles)) {
         setBattles([]);
         setErr(res?.message || "Failed to load history");
+        setHistoryLoaded(true);
         return;
       }
+
       setBattles(res.battles);
+      setHistoryLoaded(true);
     } catch (e) {
       setErr(e?.message || "Failed to load history");
       setBattles([]);
+      setHistoryLoaded(true);
     } finally {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    load();
-  }, []);
 
   const filtered = useMemo(() => {
     const text = q.trim().toLowerCase();
@@ -127,212 +180,255 @@ export default function Dashboard() {
     });
   };
 
-  return (
-    <div className="bg-slate-950 text-white min-h-[100svh]">
-      {/* TOP BAR */}
-      <div className="border-b border-slate-800 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-5 py-4 sm:py-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <button
-              onClick={() => nav("/dashboard")}
-              className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-100 hover:text-white whitespace-nowrap"
-            >
-              CodeBattle
-            </button>
+  const displayName = user?.username || user?.email || "Player";
 
-            <div className="hidden lg:block text-sm text-slate-400 truncate">
-              Welcome{user?.username ? `, ${user.username}` : ""} — Global battle history + quick actions
+  return (
+    <div className="min-h-[100svh] w-full text-white">
+      {/* Premium header (no extra heavy navbar needed) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <GlowShell>
+          <div className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-sm text-white/60">Dashboard</div>
+              <div className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight">
+                Welcome, <span className="text-white">{displayName}</span>
+              </div>
+              <div className="mt-2 text-sm text-white/65 max-w-2xl">
+                Create a room, join with code, and load battle history only when you need it.
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={() => nav("/create-room")}
+                className="h-10 px-4 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-indigo-500 font-semibold shadow-lg shadow-fuchsia-500/20 hover:opacity-95 active:scale-[0.99] transition"
+              >
+                Create Room
+              </button>
+              <LogoutButton />
             </div>
           </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="hidden sm:block text-sm text-slate-300 max-w-[40vw] truncate">
-              {user?.username || user?.email}
-            </span>
-            <LogoutButton />
-          </div>
-        </div>
+        </GlowShell>
       </div>
 
-      {/* CONTENT */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-5 py-5 sm:py-6 space-y-4 sm:space-y-5">
-        {/* ACTIONS ROW */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Create */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5">
-            <div className="text-base sm:text-lg font-bold">Create Room</div>
-            <div className="text-sm text-slate-400 mt-1">
-              Start a new battle and invite players.
+      {/* Content grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Left column: Join + Quick actions */}
+        <div className="space-y-5">
+          {/* Join Room */}
+          <GlowShell>
+            <div className="p-5 sm:p-6">
+              <div className="text-lg font-bold">Join Room</div>
+              <div className="mt-1 text-sm text-white/65">
+                Paste a room code to enter the lobby.
+              </div>
+
+              <div className="mt-4 space-y-3">
+                <input
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value)}
+                  placeholder="Enter room code (example: a1b2c3)"
+                  className="w-full h-12 px-4 rounded-2xl bg-black/30 border border-white/10 outline-none focus:border-fuchsia-400/60"
+                />
+
+                <button
+                  disabled={joining}
+                  onClick={joinRoom}
+                  className="w-full h-12 rounded-2xl bg-white text-black font-semibold hover:bg-white/90 disabled:opacity-60 active:scale-[0.99] transition"
+                >
+                  {joining ? "Joining..." : "Join Room"}
+                </button>
+
+                {joinErr && (
+                  <div className="text-rose-200 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-3 text-sm">
+                    {joinErr}
+                  </div>
+                )}
+              </div>
             </div>
+          </GlowShell>
 
-            <button
-              onClick={() => nav("/create-room")}
-              className="mt-4 w-full h-11 sm:h-12 px-4 rounded-xl font-semibold bg-slate-200 text-slate-900 hover:bg-white"
-            >
-              Create Room
-            </button>
-          </div>
+          {/* Quick actions */}
+          <GlowShell>
+            <div className="p-5 sm:p-6">
+              <div className="text-lg font-bold">Quick Actions</div>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={() => nav("/create-room")}
+                  className="h-12 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/15 font-semibold"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => setJoinCode("")}
+                  className="h-12 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 font-semibold text-white/80"
+                >
+                  Clear Code
+                </button>
+              </div>
 
-          {/* Join */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:col-span-2">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <div className="text-base sm:text-lg font-bold">Join Room</div>
-                <div className="text-sm text-slate-400 mt-1">
-                  Paste room code to enter lobby.
+              <div className="mt-4 text-xs text-white/55">
+                Tip: Use <b>Create</b> to start a new battle, then share the room code.
+              </div>
+            </div>
+          </GlowShell>
+        </div>
+
+        {/* Right column: History (lazy loaded) */}
+        <div className="lg:col-span-2">
+          <GlowShell>
+            <div className="p-5 sm:p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <div className="text-lg font-bold">Battle History</div>
+                  <div className="text-sm text-white/60">
+                    Load recent battles only when you want (faster dashboard).
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => loadHistory(20)}
+                    disabled={loading}
+                    className="h-10 px-4 rounded-2xl bg-white text-black font-semibold hover:bg-white/90 disabled:opacity-60"
+                  >
+                    {historyLoaded ? "Reload (20)" : "Load (20)"}
+                  </button>
+                  <button
+                    onClick={() => loadHistory(100)}
+                    disabled={loading}
+                    className="h-10 px-4 rounded-2xl bg-white/10 border border-white/10 font-semibold hover:bg-white/15 disabled:opacity-60"
+                  >
+                    Load 100
+                  </button>
                 </div>
               </div>
 
-              <button
-                onClick={load}
-                className="w-full sm:w-auto h-10 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
-              >
-                Refresh
-              </button>
-            </div>
-
-            <div className="mt-4 flex flex-col sm:flex-row gap-3">
-              <input
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value)}
-                placeholder="Enter room code (example: a1b2c3)"
-                className="w-full flex-1 h-11 sm:h-12 px-4 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
-              />
-
-              <button
-                disabled={joining}
-                onClick={joinRoom}
-                className="w-full sm:w-auto h-11 sm:h-12 px-5 rounded-xl font-semibold bg-slate-200 text-slate-900 hover:bg-white disabled:opacity-60"
-              >
-                {joining ? "Joining..." : "Join"}
-              </button>
-            </div>
-
-            {joinErr && (
-              <div className="mt-3 text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-sm">
-                {joinErr}
+              {/* Filters */}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Search by topic, room, winner..."
+                  className="md:col-span-2 h-11 px-4 rounded-2xl bg-black/30 border border-white/10 outline-none focus:border-fuchsia-400/60"
+                />
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="h-11 px-3 rounded-2xl bg-black/30 border border-white/10 outline-none focus:border-fuchsia-400/60"
+                >
+                  <option value="ALL">All</option>
+                  <option value="FINISHED">FINISHED</option>
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="WAITING">WAITING</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* FILTERS */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl p-4">
-          <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-            <div className="flex-1 flex flex-col sm:flex-row gap-3">
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search by topic, room code, winner, status..."
-                className="w-full flex-1 h-11 sm:h-12 px-4 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
-              />
-
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="w-full sm:w-56 h-11 sm:h-12 px-3 rounded-xl bg-slate-950 border border-slate-800 outline-none focus:border-slate-600"
-              >
-                <option value="ALL">All</option>
-                <option value="FINISHED">FINISHED</option>
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="WAITING">WAITING</option>
-                <option value="CANCELLED">CANCELLED</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* HISTORY */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl sm:rounded-2xl overflow-hidden">
-          <div className="px-4 sm:px-5 py-4 flex items-center justify-between border-b border-slate-800">
-            <div>
-              <div className="text-base sm:text-lg font-bold">Global History</div>
-              <div className="text-xs text-slate-400">
-                Showing {filtered.length} of {battles.length}
+              {/* quick filter chips */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {["ALL", "FINISHED", "ACTIVE", "WAITING", "CANCELLED"].map((st) => (
+                  <Chip key={st} active={status === st} onClick={() => setStatus(st)}>
+                    {st}
+                  </Chip>
+                ))}
               </div>
-            </div>
-          </div>
 
-          {err && (
-            <div className="px-4 sm:px-5 py-4 text-rose-300 border-b border-slate-800 text-sm">
-              {err}
-            </div>
-          )}
+              {err && (
+                <div className="mt-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-200">
+                  {err}
+                </div>
+              )}
 
-          {loading ? (
-            <div className="px-4 sm:px-5 py-10 text-slate-400">Loading battles...</div>
-          ) : filtered.length === 0 ? (
-            <div className="px-4 sm:px-5 py-10 text-slate-400">
-              No battles found for this filter.
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-800">
-              {filtered.map((b) => {
-                const s = String(b.status || "").toUpperCase();
-                return (
-                  <div
-                    key={b.roomCode}
-                    className="px-4 sm:px-5 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 hover:bg-slate-900"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="font-semibold truncate max-w-[70vw] sm:max-w-none">
-                          {(b.topic || "TOPIC").toUpperCase()}
-                        </div>
-
-                        <Badge tone={statusTone(s)}>{s}</Badge>
-
-                        <span className="text-xs text-slate-400 break-all">
-                          Room: <span className="text-slate-200">{b.roomCode}</span>
-                        </span>
-                      </div>
-
-                      <div className="text-sm text-slate-300 mt-1 flex flex-wrap gap-x-2 gap-y-1">
-                        <span>
-                          Players: <span className="text-white">{b.playerCount}</span>
-                        </span>
-                        <span className="text-slate-500">·</span>
-                        <span>
-                          Questions: <span className="text-white">{b.questionCount}</span>
-                        </span>
-                        <span className="text-slate-500">·</span>
-                        <span>
-                          Timer: <span className="text-white">{b.timerSeconds}s</span>
-                        </span>
-                      </div>
-
-                      <div className="text-sm text-slate-400 mt-1">
-                        Winner:{" "}
-                        <span className="text-emerald-300 font-semibold break-words">
-                          {b.winnerUsername || "—"}
-                        </span>
-                      </div>
+              {/* Content */}
+              <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+                {!historyLoaded && !loading ? (
+                  <div className="p-8 text-center">
+                    <div className="text-white/80 font-semibold">
+                      History is not loaded yet
                     </div>
-
-                    {/* buttons responsive */}
-                    <div className="grid grid-cols-2 sm:flex gap-2 w-full lg:w-auto">
-                      <button
-                        onClick={() => nav(`/history/${b.roomCode}`)}
-                        className="w-full px-4 py-2 rounded-xl bg-slate-200 text-slate-900 hover:bg-white font-semibold"
-                      >
-                        Open
-                      </button>
-                      <button
-                        onClick={() => navigator.clipboard?.writeText?.(b.roomCode)}
-                        className="w-full px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold"
-                      >
-                        Copy Code
-                      </button>
+                    <div className="mt-2 text-sm text-white/55">
+                      Click <b>Load (20)</b> to fetch recent battles.
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                ) : loading ? (
+                  <div className="divide-y divide-white/10">
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <div className="p-8 text-center text-white/60">
+                    No battles found for this filter.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-white/10">
+                    {filtered.map((b) => {
+                      const s = String(b.status || "").toUpperCase();
+                      return (
+                        <div
+                          key={b.roomCode}
+                          className="px-5 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 hover:bg-white/5 transition"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div className="font-semibold truncate max-w-[70vw] sm:max-w-none">
+                                {(b.topic || "TOPIC").toUpperCase()}
+                              </div>
+                              <Badge tone={statusTone(s)}>{s}</Badge>
+                              <span className="text-xs text-white/55 break-all">
+                                Room: <span className="text-white/85">{b.roomCode}</span>
+                              </span>
+                            </div>
 
-        <div className="text-xs text-slate-500 px-1">
-          Tip: Click <b>Open</b> to view battle details (<code>/history/:roomCode</code>).
+                            <div className="mt-1 text-sm text-white/70 flex flex-wrap gap-x-2 gap-y-1">
+                              <span>
+                                Players: <span className="text-white">{b.playerCount}</span>
+                              </span>
+                              <span className="text-white/30">·</span>
+                              <span>
+                                Questions: <span className="text-white">{b.questionCount}</span>
+                              </span>
+                              <span className="text-white/30">·</span>
+                              <span>
+                                Timer: <span className="text-white">{b.timerSeconds}s</span>
+                              </span>
+                            </div>
+
+                            <div className="mt-1 text-sm text-white/60">
+                              Winner:{" "}
+                              <span className="text-emerald-300 font-semibold break-words">
+                                {b.winnerUsername || "—"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:flex gap-2 w-full lg:w-auto">
+                            <button
+                              onClick={() => nav(`/history/${b.roomCode}`)}
+                              className="w-full px-4 py-2 rounded-2xl bg-white text-black hover:bg-white/90 font-semibold"
+                            >
+                              Open
+                            </button>
+                            <button
+                              onClick={() => navigator.clipboard?.writeText?.(b.roomCode)}
+                              className="w-full px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 font-semibold"
+                            >
+                              Copy Code
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-3 text-xs text-white/45">
+                Tip: Loading history on-demand makes your dashboard faster and feels premium.
+              </div>
+            </div>
+          </GlowShell>
         </div>
       </div>
     </div>
